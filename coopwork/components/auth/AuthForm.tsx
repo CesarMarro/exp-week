@@ -446,12 +446,6 @@ interface FormState {
   isTypingPassword: boolean;
 }
 
-interface MockUser {
-  id: string
-  email: string
-  user_metadata: { full_name: string; career: string }
-}
-
 const CAREERS_PLACEHOLDER = "Elige una carrera...";
 
 export default function AuthForm() {
@@ -493,14 +487,18 @@ export default function AuthForm() {
       return;
     }
     set({ loading: true, error: "" });
-    await new Promise((r) => setTimeout(r, 600));
-    const mockUser: MockUser = {
-      id: crypto.randomUUID(),
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: s.email,
-      user_metadata: { full_name: s.email.split("@")[0], career: "Colaborador" },
-    };
-    localStorage.setItem("mockUser", JSON.stringify(mockUser));
+      password: s.password,
+    });
+    set({ loading: false });
+    if (error) {
+      set({ error: error.message });
+      return;
+    }
     router.push("/projects");
+    router.refresh();
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -510,14 +508,24 @@ export default function AuthForm() {
       return;
     }
     set({ loading: true, error: "" });
-    await new Promise((r) => setTimeout(r, 600));
-    const mockUser: MockUser = {
-      id: crypto.randomUUID(),
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signUp({
       email: s.email,
-      user_metadata: { full_name: s.fullName || s.email.split("@")[0], career: s.career || "Colaborador" },
-    };
-    localStorage.setItem("mockUser", JSON.stringify(mockUser));
+      password: s.password,
+      options: {
+        data: { full_name: s.fullName || s.email.split("@")[0] },
+      },
+    });
+    if (error) {
+      set({ loading: false, error: error.message });
+      return;
+    }
+    if (data.user) {
+      await supabase.from("profiles").update({ career: s.career || "" }).eq("id", data.user.id);
+    }
+    set({ loading: false });
     router.push("/projects");
+    router.refresh();
   }
 
   const inputClass =

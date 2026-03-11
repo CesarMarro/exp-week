@@ -1,20 +1,18 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { Search, X, SlidersHorizontal } from "lucide-react"
+import { createClient } from "@/lib/supabase"
+import { fetchProjectsWithRoles, type ProjectWithRoles } from "@/lib/supabase-queries"
 import { cn } from "@/lib/utils"
 import { staggerContainer } from "@/lib/animations"
-import {
-  MOCK_PROJECTS,
-  type RoleName,
-  type ProjectCategory,
-  type ProjectStatus,
-} from "@/lib/mock-data"
 import ProjectCard from "@/components/ProjectCard"
 
-type StatusFilter = "all" | ProjectStatus
+type StatusFilter = "all" | ProjectWithRoles["status"]
+type RoleName = string
+type ProjectCategory = string
 
 interface Filters {
   search: string
@@ -170,6 +168,8 @@ function EmptyState({ onReset }: { onReset: () => void }) {
 }
 
 export default function ProjectsPage() {
+  const [projects, setProjects] = useState<ProjectWithRoles[]>([])
+  const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState<Filters>({
     search: "",
     status: "all",
@@ -180,11 +180,21 @@ export default function ProjectsPage() {
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
 
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const data = await fetchProjectsWithRoles(supabase)
+      setProjects(data)
+      setLoading(false)
+    }
+    load()
+  }, [])
+
   const activeFilterCount =
     (filters.status !== "all" ? 1 : 0) + filters.roles.size + filters.categories.size
 
   const filtered = useMemo(() => {
-    return MOCK_PROJECTS.filter((p) => {
+    return projects.filter((p) => {
       if (filters.search) {
         const q = filters.search.toLowerCase()
         if (!p.title.toLowerCase().includes(q) && !p.description.toLowerCase().includes(q)) return false
@@ -197,10 +207,38 @@ export default function ProjectsPage() {
       if (filters.categories.size > 0 && !filters.categories.has(p.category)) return false
       return true
     })
-  }, [filters])
+  }, [projects, filters])
 
-  function handleJoin(projectId: string, roleId: string) {
+  async function handleJoin(projectId: string, roleId: string) {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      setToastMessage("Inicia sesión para unirte")
+      setTimeout(() => setToastMessage(""), 2500)
+      return
+    }
+    const { error } = await import("@/lib/supabase-queries").then((m) =>
+      m.joinRole(supabase, roleId, user.id)
+    )
+    if (error) {
+      setToastMessage(error)
+      setTimeout(() => setToastMessage(""), 2500)
+      return
+    }
     setJoinedRoles((prev) => new Set([...prev, roleId]))
+    setProjects((prev) =>
+      prev.map((p) => {
+        if (p.id !== projectId) return p
+        const newRoles = p.roles.map((r) =>
+          r.id === roleId ? { ...r, filled_by: user.id } : r
+        )
+        return {
+          ...p,
+          roles: newRoles,
+          status: newRoles.every((r) => r.filled_by) ? ("full" as const) : p.status,
+        }
+      })
+    )
     setToastMessage("Te uniste al proyecto")
     setTimeout(() => setToastMessage(""), 2500)
   }
@@ -301,10 +339,12 @@ export default function ProjectsPage() {
         {/* Grid */}
         <main className="flex-1 min-w-0">
           <p className="mb-5 text-xs text-slate-600">
-            {filtered.length} proyecto{filtered.length !== 1 ? "s" : ""}
+            {loading ? "Cargando..." : `${filtered.length} proyecto${filtered.length !== 1 ? "s" : ""}`}
           </p>
 
-          {filtered.length === 0 ? (
+          {loading ? (
+            <div className="py-16 text-center text-slate-500 text-sm">Cargando proyectos...</div>
+          ) : filtered.length === 0 ? (
             <EmptyState onReset={resetFilters} />
           ) : (
             <motion.div

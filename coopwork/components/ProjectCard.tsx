@@ -5,10 +5,11 @@ import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { relativeDate, type MockProject } from "@/lib/mock-data"
+import { relativeDate } from "@/lib/mock-data"
+import type { ProjectWithRoles } from "@/lib/supabase-queries"
 
 interface ProjectCardProps {
-  project: MockProject
+  project: ProjectWithRoles
   onJoin: (projectId: string, roleId: string) => void
   joinedRoles: Set<string>
 }

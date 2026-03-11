@@ -2,16 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase";
-
-interface MockUser {
-  id: string;
-  email: string;
-  user_metadata: { full_name: string; career: string };
-}
 
 interface NavbarClientProps {
   user: User | null;
@@ -20,6 +13,7 @@ interface NavbarClientProps {
 const navLinks = [
   { href: "/projects", label: "Proyectos" },
   { href: "/projects/new", label: "Crear" },
+  { href: "/profile", label: "Perfil" },
 ];
 
 function NavLink({ href, label }: { href: string; label: string }) {
@@ -44,7 +38,6 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 export default function NavbarClient({ user }: NavbarClientProps) {
   const router = useRouter();
-  const [mockUser, setMockUser] = useState<MockUser | null>(null);
   const { scrollY } = useScroll();
   const navBlur = useTransform(scrollY, [0, 100], ["blur(16px)", "blur(24px)"]);
   const navBorder = useTransform(
@@ -53,35 +46,24 @@ export default function NavbarClient({ user }: NavbarClientProps) {
     ["rgba(99, 102, 241, 0.2)", "rgba(99, 102, 241, 0.28)"]
   );
 
-  useEffect(() => {
-    const raw = localStorage.getItem("mockUser");
-    if (raw) {
-      try { setMockUser(JSON.parse(raw)); } catch { /* skip */ }
-    }
-  }, []);
-
   async function handleSignOut() {
-    localStorage.removeItem("mockUser");
-    setMockUser(null);
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/");
     router.refresh();
   }
 
-  const effectiveUser = user ?? mockUser;
-
-  const initials = effectiveUser?.user_metadata?.full_name
-    ? (effectiveUser.user_metadata.full_name as string)
+  const initials = user?.user_metadata?.full_name
+    ? (user.user_metadata.full_name as string)
         .split(" ")
         .map((n: string) => n[0])
         .join("")
         .toUpperCase()
         .slice(0, 2)
-    : effectiveUser?.email?.[0]?.toUpperCase() ?? "U";
+    : user?.email?.[0]?.toUpperCase() ?? "U";
 
   const displayName =
-    (effectiveUser?.user_metadata?.full_name as string) ?? effectiveUser?.email ?? "Usuario";
+    (user?.user_metadata?.full_name as string) ?? user?.email ?? "Usuario";
 
   return (
     <motion.nav
@@ -137,7 +119,7 @@ export default function NavbarClient({ user }: NavbarClientProps) {
             </motion.div>
           ))}
 
-          {effectiveUser ? (
+          {user ? (
             <motion.div
               className="flex items-center gap-3"
               initial={{ opacity: 0, y: -8 }}
