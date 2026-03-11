@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import ShaderBackground from "@/components/ui/shader-background";
 import { fadeUp, fadeIn } from "@/lib/animations";
+import { hero } from "@/lib/content";
 
 export default function HeroSection() {
   return (
@@ -27,7 +28,7 @@ export default function HeroSection() {
         >
           <span className="inline-flex items-center gap-1.5 rounded-full bg-indigo-500/20 px-3 py-1 text-sm font-semibold text-indigo-300 ring-1 ring-indigo-500/40">
             <span className="text-indigo-400">⬡</span>
-            100% Justos · Sin Sorpresas
+            {hero.flag}
           </span>
         </motion.div>
 
@@ -38,9 +39,9 @@ export default function HeroSection() {
           animate="visible"
           transition={{ delay: 0.15 }}
         >
-          Construye proyectos reales.{" "}
+          {hero.headlineStart}{" "}
           <span className="text-white [text-shadow:0_0_40px_rgba(0,0,0,0.5),0_2px_8px_rgba(0,0,0,0.4)]">
-            Reparte ganancias con justicia.
+            {hero.headlineEnd}
           </span>
         </motion.h1>
 
@@ -51,9 +52,7 @@ export default function HeroSection() {
           animate="visible"
           transition={{ delay: 0.3 }}
         >
-          CoopWork conecta personas con habilidades complementarias para
-          construir productos colaborativos, con reparto de equity transparente
-          desde el primer día.
+          {hero.description}
         </motion.p>
 
         <motion.div
@@ -68,7 +67,7 @@ export default function HeroSection() {
               href="/projects"
               className="block w-full rounded-xl bg-indigo-600 px-8 py-4 text-base font-semibold transition-colors hover:bg-indigo-500 sm:w-auto"
             >
-              Ver proyectos
+              {hero.ctaPrimary}
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
@@ -76,7 +75,7 @@ export default function HeroSection() {
               href="/projects/new"
               className="block w-full rounded-xl border border-slate-700 bg-slate-800/80 px-8 py-4 text-base font-semibold transition-colors hover:border-slate-500 hover:bg-slate-700 sm:w-auto"
             >
-              Crear proyecto
+              {hero.ctaSecondary}
             </Link>
           </motion.div>
         </motion.div>

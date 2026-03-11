@@ -5,6 +5,7 @@ import FeaturesSection from "@/components/sections/FeaturesSection";
 import EquitySection from "@/components/sections/EquitySection";
 import ShowcaseSection from "@/components/sections/ShowcaseSection";
 import CTASection from "@/components/sections/CTASection";
+import { footer } from "@/lib/content";
 
 export default function Home() {
   return (
@@ -18,8 +19,8 @@ export default function Home() {
       <CTASection />
 
       <footer className="border-t border-slate-800 px-6 py-10 text-center text-sm text-slate-500">
-        <p className="font-semibold text-slate-300">CoopWork</p>
-        <p className="mt-1">Hackathon · 11 de marzo 2026</p>
+        <p className="font-semibold text-slate-300">{footer.brandName}</p>
+        <p className="mt-1">{footer.tagline}</p>
       </footer>
     </main>
   );

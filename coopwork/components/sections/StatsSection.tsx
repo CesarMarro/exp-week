@@ -4,20 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/lib/useScrollReveal";
 import { staggerContainer, scaleIn } from "@/lib/animations";
-
-interface StatItem {
-  value: number;
-  suffix: string;
-  label: string;
-  emoji: string;
-}
-
-const stats: StatItem[] = [
-  { value: 500, suffix: "+", label: "Proyectos creados", emoji: "🚀" },
-  { value: 1200, suffix: "+", label: "Colaboradores activos", emoji: "🤝" },
-  { value: 38, suffix: "", label: "Países representados", emoji: "🌎" },
-  { value: 92, suffix: "%", label: "Satisfacción del equipo", emoji: "⭐" },
-];
+import { stats } from "@/lib/content";
 
 function AnimatedCounter({
   value,

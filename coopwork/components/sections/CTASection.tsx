@@ -4,6 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/lib/useScrollReveal";
 import { fadeUp, staggerContainer } from "@/lib/animations";
+import { cta } from "@/lib/content";
 
 export default function CTASection() {
   const { ref, controls } = useScrollReveal(0.3);
@@ -32,9 +33,9 @@ export default function CTASection() {
           variants={fadeUp}
           className="text-4xl font-extrabold leading-tight sm:text-5xl"
         >
-          ¿Listo para construir{" "}
+          {cta.title}{" "}
           <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">
-            algo juntos?
+            {cta.titleHighlight}
           </span>
         </motion.h2>
 
@@ -42,8 +43,7 @@ export default function CTASection() {
           variants={fadeUp}
           className="mt-6 text-lg text-slate-400"
         >
-          Únete a más de 1,200 colaboradores que ya están creando el futuro,
-          con transparencia y equidad desde el primer día.
+          {cta.description}
         </motion.p>
 
         <motion.div
@@ -55,7 +55,7 @@ export default function CTASection() {
               href="/projects/new"
               className="block w-full rounded-xl bg-indigo-600 px-10 py-4 text-base font-semibold transition-colors hover:bg-indigo-500 sm:w-auto"
             >
-              Crear mi proyecto
+              {cta.ctaPrimary}
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
@@ -63,7 +63,7 @@ export default function CTASection() {
               href="/projects"
               className="block w-full rounded-xl border border-slate-700 bg-slate-800/80 px-10 py-4 text-base font-semibold transition-colors hover:border-slate-500 hover:bg-slate-700 sm:w-auto"
             >
-              Explorar proyectos
+              {cta.ctaSecondary}
             </Link>
           </motion.div>
         </motion.div>

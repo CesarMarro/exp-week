@@ -4,46 +4,7 @@ import { motion } from "framer-motion";
 import { Users, Code2 } from "lucide-react";
 import { useScrollReveal } from "@/lib/useScrollReveal";
 import { fadeUp, staggerContainer } from "@/lib/animations";
-
-interface Project {
-  name: string;
-  description: string;
-  stack: string[];
-  members: number;
-  status: "active" | "looking";
-  statusLabel: string;
-  equityExample: string;
-}
-
-const projects: Project[] = [
-  {
-    name: "EcoTrack",
-    description: "App de seguimiento de huella de carbono personal y por equipos.",
-    stack: ["React Native", "Node.js", "PostgreSQL"],
-    members: 4,
-    status: "active",
-    statusLabel: "Activo",
-    equityExample: "Dev 40% · Diseño 35% · PM 25%",
-  },
-  {
-    name: "MentalFlow",
-    description: "Plataforma de bienestar mental con IA para equipos remotos.",
-    stack: ["Next.js", "Python", "OpenAI"],
-    members: 3,
-    status: "looking",
-    statusLabel: "Buscando diseñador",
-    equityExample: "Backend 50% · PM 30% · Diseño 20%",
-  },
-  {
-    name: "FinBuddy",
-    description: "Gestor de finanzas personales gamificado para jóvenes.",
-    stack: ["Flutter", "Firebase", "Dart"],
-    members: 2,
-    status: "looking",
-    statusLabel: "Buscando backend",
-    equityExample: "Diseño 55% · PM 45%",
-  },
-];
+import { showcase } from "@/lib/content";
 
 const statusStyles = {
   active: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25",
@@ -75,10 +36,10 @@ export default function ShowcaseSection() {
           animate={controls}
         >
           <h2 className="text-3xl font-bold sm:text-4xl">
-            Proyectos reales, equipos reales
+            {showcase.title}
           </h2>
           <p className="mt-4 text-slate-400">
-            Ejemplos de lo que se puede construir con CoopWork.
+            {showcase.subtitle}
           </p>
         </motion.div>
 
@@ -88,7 +49,7 @@ export default function ShowcaseSection() {
           initial="hidden"
           animate={controls}
         >
-          {projects.map((project) => (
+          {showcase.projects.map((project) => (
             <motion.div
               key={project.name}
               variants={cardVariant}

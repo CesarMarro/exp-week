@@ -5,44 +5,15 @@ import { motion } from "framer-motion";
 import { useScrollReveal } from "@/lib/useScrollReveal";
 import { fadeUp, staggerContainer, fadeIn } from "@/lib/animations";
 import EquityBadge from "@/components/EquityBadge";
-
-interface EquitySlice {
-  name: string;
-  role: string;
-  percentage: number;
-  color: string;
-  strokeColor: string;
-}
-
-const slices: EquitySlice[] = [
-  {
-    name: "Carlos",
-    role: "Backend",
-    percentage: 40,
-    color: "text-violet-400",
-    strokeColor: "#7c3aed",
-  },
-  {
-    name: "Ana",
-    role: "Diseño",
-    percentage: 35,
-    color: "text-indigo-400",
-    strokeColor: "#4f46e5",
-  },
-  {
-    name: "Marta",
-    role: "Marketing",
-    percentage: 25,
-    color: "text-purple-400",
-    strokeColor: "#9333ea",
-  },
-];
+import { equity } from "@/lib/content";
 
 const RADIUS = 80;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const GAP = 6;
 
-function buildArcs(slicesData: EquitySlice[]) {
+function buildArcs(
+  slicesData: typeof equity.slices
+) {
   let offset = 0;
   return slicesData.map((s) => {
     const arcLength = (s.percentage / 100) * CIRCUMFERENCE - GAP;
@@ -55,7 +26,7 @@ function buildArcs(slicesData: EquitySlice[]) {
 export default function EquitySection() {
   const { ref, controls } = useScrollReveal(0.25);
   const [hovered, setHovered] = useState<string | null>(null);
-  const arcs = buildArcs(slices);
+  const arcs = buildArcs(equity.slices);
 
   return (
     <section ref={ref as React.RefObject<HTMLElement>} className="px-6 py-24">
@@ -67,10 +38,10 @@ export default function EquitySection() {
           animate={controls}
         >
           <h2 className="text-3xl font-bold sm:text-4xl">
-            Equity transparente desde el día uno
+            {equity.title}
           </h2>
           <p className="mt-4 text-slate-400">
-            Cada colaborador conoce exactamente su parte. Sin sorpresas, sin letra chica.
+            {equity.subtitle}
           </p>
         </motion.div>
 
@@ -142,7 +113,7 @@ export default function EquitySection() {
                 className="fill-white text-sm font-bold"
                 style={{ fontSize: 13, fill: "rgba(255,255,255,0.5)" }}
               >
-                Proyecto
+                {equity.chartCenterLabel}
               </text>
               <text
                 x="110"
@@ -150,7 +121,7 @@ export default function EquitySection() {
                 textAnchor="middle"
                 style={{ fontSize: 15, fill: "white", fontWeight: "bold" }}
               >
-                AppX
+                {equity.chartCenterValue}
               </text>
             </svg>
           </motion.div>
@@ -188,7 +159,7 @@ export default function EquitySection() {
             ))}
 
             <p className="mt-2 text-center text-xs text-slate-500">
-              Pasa el cursor sobre cada sección para destacarla
+              {equity.legendHint}
             </p>
           </motion.div>
         </motion.div>

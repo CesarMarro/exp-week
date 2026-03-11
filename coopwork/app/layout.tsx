@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import { metadataContent } from "@/lib/content";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -9,9 +10,8 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "CoopWork — Construye proyectos reales",
-  description:
-    "Plataforma colaborativa donde los equipos reparten ganancias con justicia.",
+  title: metadataContent.title,
+  description: metadataContent.description,
 };
 
 export default function RootLayout({

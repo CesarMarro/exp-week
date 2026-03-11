@@ -3,30 +3,7 @@
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/lib/useScrollReveal";
 import { fadeUp, staggerContainer, scaleIn } from "@/lib/animations";
-
-const steps = [
-  {
-    number: 1,
-    icon: "🚀",
-    title: "Crea tu proyecto",
-    description:
-      "Define tu idea, las habilidades que necesitas y cómo se repartirá el equity entre colaboradores.",
-  },
-  {
-    number: 2,
-    icon: "🤝",
-    title: "Únete a un equipo",
-    description:
-      "Explora proyectos activos, aplica con tu perfil y negocia tu participación de forma transparente.",
-  },
-  {
-    number: 3,
-    icon: "⚡",
-    title: "Colabora y crece",
-    description:
-      "Trabaja en equipo, registra contribuciones y cobra tu parte proporcional cuando el proyecto genere ingresos.",
-  },
-];
+import { howItWorks } from "@/lib/content";
 
 export default function HowItWorksSection() {
   const { ref, controls } = useScrollReveal();
@@ -40,7 +17,7 @@ export default function HowItWorksSection() {
           initial="hidden"
           animate={controls}
         >
-          ¿Cómo funciona?
+          {howItWorks.title}
         </motion.h2>
 
         <motion.div
@@ -49,7 +26,7 @@ export default function HowItWorksSection() {
           initial="hidden"
           animate={controls}
         >
-          {steps.map((step) => (
+          {howItWorks.steps.map((step) => (
             <motion.div
               key={step.number}
               variants={scaleIn}
