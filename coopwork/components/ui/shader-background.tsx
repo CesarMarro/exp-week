@@ -1,9 +1,16 @@
-import React, { useEffect, useRef } from 'react';
+"use client";
 
-const ShaderBackground = () => {
-  const canvasRef = useRef(null);
+import React, { useEffect, useRef } from "react";
 
-  // Vertex shader source code
+interface ShaderBackgroundProps {
+  className?: string;
+}
+
+const ShaderBackground = ({
+  className = "absolute inset-0 w-full h-full",
+}: ShaderBackgroundProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   const vsSource = `
     attribute vec4 aVertexPosition;
     void main() {
@@ -11,7 +18,6 @@ const ShaderBackground = () => {
     }
   `;
 
-  // Fragment shader source code
   const fsSource = `
     precision highp float;
     uniform vec2 iResolution;
@@ -107,14 +113,18 @@ const ShaderBackground = () => {
     }
   `;
 
-  // Helper function to compile shader
-  const loadShader = (gl, type, source) => {
+  const loadShader = (
+    gl: WebGLRenderingContext,
+    type: number,
+    source: string
+  ): WebGLShader | null => {
     const shader = gl.createShader(type);
+    if (!shader) return null;
     gl.shaderSource(shader, source);
     gl.compileShader(shader);
 
     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-      console.error('Shader compile error: ', gl.getShaderInfoLog(shader));
+      console.error("Shader compile error: ", gl.getShaderInfoLog(shader));
       gl.deleteShader(shader);
       return null;
     }
@@ -122,18 +132,26 @@ const ShaderBackground = () => {
     return shader;
   };
 
-  // Initialize shader program
-  const initShaderProgram = (gl, vsSource, fsSource) => {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
+  const initShaderProgram = (
+    gl: WebGLRenderingContext,
+    vs: string,
+    fs: string
+  ): WebGLProgram | null => {
+    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vs);
+    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fs);
+    if (!vertexShader || !fragmentShader) return null;
 
     const shaderProgram = gl.createProgram();
+    if (!shaderProgram) return null;
     gl.attachShader(shaderProgram, vertexShader);
     gl.attachShader(shaderProgram, fragmentShader);
     gl.linkProgram(shaderProgram);
 
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-      console.error('Shader program link error: ', gl.getProgramInfoLog(shaderProgram));
+      console.error(
+        "Shader program link error: ",
+        gl.getProgramInfoLog(shaderProgram)
+      );
       return null;
     }
 
@@ -144,31 +162,28 @@ const ShaderBackground = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const gl = canvas.getContext('webgl');
+    const gl = canvas.getContext("webgl");
     if (!gl) {
-      console.warn('WebGL not supported.');
+      console.warn("WebGL not supported.");
       return;
     }
 
     const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+    if (!shaderProgram) return;
+
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    const positions = [
-      -1.0, -1.0,
-       1.0, -1.0,
-      -1.0,  1.0,
-       1.0,  1.0,
-    ];
+    const positions = [-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
     const programInfo = {
       program: shaderProgram,
       attribLocations: {
-        vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
+        vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
       },
       uniformLocations: {
-        resolution: gl.getUniformLocation(shaderProgram, 'iResolution'),
-        time: gl.getUniformLocation(shaderProgram, 'iTime'),
+        resolution: gl.getUniformLocation(shaderProgram, "iResolution"),
+        time: gl.getUniformLocation(shaderProgram, "iTime"),
       },
     };
 
@@ -178,10 +193,12 @@ const ShaderBackground = () => {
       gl.viewport(0, 0, canvas.width, canvas.height);
     };
 
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener("resize", resizeCanvas);
     resizeCanvas();
 
-    let startTime = Date.now();
+    let animationId: number;
+    const startTime = Date.now();
+
     const render = () => {
       const currentTime = (Date.now() - startTime) / 1000;
 
@@ -189,8 +206,11 @@ const ShaderBackground = () => {
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       gl.useProgram(programInfo.program);
-
-      gl.uniform2f(programInfo.uniformLocations.resolution, canvas.width, canvas.height);
+      gl.uniform2f(
+        programInfo.uniformLocations.resolution,
+        canvas.width,
+        canvas.height
+      );
       gl.uniform1f(programInfo.uniformLocations.time, currentTime);
 
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -205,19 +225,19 @@ const ShaderBackground = () => {
       gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      requestAnimationFrame(render);
+      animationId = requestAnimationFrame(render);
     };
 
-    requestAnimationFrame(render);
+    animationId = requestAnimationFrame(render);
 
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener("resize", resizeCanvas);
+      cancelAnimationFrame(animationId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
-    <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full -z-10" />
-  );
+  return <canvas ref={canvasRef} className={className} />;
 };
 
 export default ShaderBackground;
