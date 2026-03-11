@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase";
 // ─── Eyeball Component ────────────────────────────────────────────────────────
 
 interface EyeBallProps {
@@ -451,6 +452,8 @@ interface MockUser {
   user_metadata: { full_name: string; career: string }
 }
 
+const CAREERS_PLACEHOLDER = "Elige una carrera...";
+
 export default function AuthForm() {
   const router = useRouter();
   const [s, setS] = useState<FormState>({
@@ -465,6 +468,19 @@ export default function AuthForm() {
     isTypingEmail: false,
     isTypingPassword: false,
   });
+  const [careers, setCareers] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("careers")
+        .select("id, name")
+        .order("display_order");
+      setCareers(data ?? []);
+    };
+    load();
+  }, []);
 
   function set(partial: Partial<FormState>) {
     setS((prev) => ({ ...prev, ...partial }));
@@ -701,16 +717,22 @@ export default function AuthForm() {
                     <label className="block text-xs font-medium text-slate-400 mb-1.5">
                       Carrera / Área
                     </label>
-                    <input
-                      type="text"
+                    <select
                       required
                       value={s.career}
                       onChange={(e) => set({ career: e.target.value })}
                       onFocus={() => set({ isTypingEmail: true })}
                       onBlur={() => set({ isTypingEmail: false })}
-                      placeholder="Ingeniería..."
                       className={inputClass}
-                    />
+                      aria-label="Carrera o área"
+                    >
+                      <option value="">{CAREERS_PLACEHOLDER}</option>
+                      {careers.map((c) => (
+                        <option key={c.id} value={c.name}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 

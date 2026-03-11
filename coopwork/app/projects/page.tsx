@@ -26,10 +26,10 @@ interface Filters {
 const ALL_ROLES: RoleName[] = ["Diseño", "Ingeniería", "Marketing", "Administración", "Legal", "Finanzas"]
 const ALL_CATEGORIES: ProjectCategory[] = ["Tech", "Social", "Fintech", "Health", "Education", "Creative"]
 const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: "all", label: "Todos" },
-  { value: "open", label: "Abierto" },
-  { value: "full", label: "Lleno" },
-  { value: "closed", label: "Cerrado" },
+  { value: "all",    label: "Todos"   },
+  { value: "open",   label: "Abiertos" },
+  { value: "full",   label: "Llenos"  },
+  { value: "closed", label: "Cerrados" },
 ]
 
 interface FilterSidebarProps {
@@ -55,37 +55,34 @@ function FilterSidebar({ filters, setFilters, activeFilterCount }: FilterSidebar
     })
   }
 
-  function clearAll() {
-    setFilters({ search: "", status: "all", roles: new Set(), categories: new Set() })
-  }
-
   return (
-    <aside className="w-60 shrink-0 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white">Filtros</h2>
+    <aside className="w-52 shrink-0 space-y-7 pt-1">
+      {/* Header */}
+      <div className="flex items-center justify-between h-5">
+        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Filtros</span>
         {activeFilterCount > 0 && (
           <button
-            onClick={clearAll}
-            className="rounded-md border border-slate-700 px-2 py-0.5 text-xs text-slate-400 hover:text-white transition-colors"
+            onClick={() => setFilters({ search: "", status: "all", roles: new Set(), categories: new Set() })}
+            className="text-xs text-slate-600 hover:text-slate-400 transition-colors"
           >
-            Limpiar ({activeFilterCount})
+            Limpiar
           </button>
         )}
       </div>
 
-      {/* Status */}
-      <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">Estado</p>
-        <div className="flex flex-wrap gap-1.5">
+      {/* Estado */}
+      <div className="space-y-2">
+        <p className="text-[11px] text-slate-600 uppercase tracking-wider">Estado</p>
+        <div className="space-y-1">
           {STATUS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setFilters((prev) => ({ ...prev, status: opt.value }))}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                "block w-full text-left text-sm py-1 px-2 rounded-lg transition-colors",
                 filters.status === opt.value
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
+                  ? "text-slate-100 bg-slate-800"
+                  : "text-slate-500 hover:text-slate-300"
               )}
             >
               {opt.label}
@@ -94,37 +91,59 @@ function FilterSidebar({ filters, setFilters, activeFilterCount }: FilterSidebar
         </div>
       </div>
 
-      {/* Roles */}
-      <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">Área / Rol</p>
-        <div className="space-y-1.5">
+      {/* Área */}
+      <div className="space-y-2">
+        <p className="text-[11px] text-slate-600 uppercase tracking-wider">Área</p>
+        <div className="space-y-1">
           {ALL_ROLES.map((role) => (
-            <label key={role} className="flex cursor-pointer items-center gap-2">
+            <label
+              key={role}
+              className="flex items-center gap-2.5 py-1 px-2 rounded-lg cursor-pointer hover:bg-slate-800/50 transition-colors group"
+            >
+              <span
+                className={cn(
+                  "h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
+                  filters.roles.has(role)
+                    ? "bg-indigo-500 border-indigo-500"
+                    : "border-slate-700 group-hover:border-slate-600"
+                )}
+              >
+                {filters.roles.has(role) && (
+                  <svg viewBox="0 0 8 8" className="h-2 w-2 fill-white">
+                    <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
               <input
                 type="checkbox"
+                className="sr-only"
                 checked={filters.roles.has(role)}
                 onChange={() => toggleRole(role)}
-                className="h-3.5 w-3.5 rounded accent-indigo-500"
               />
-              <span className="text-sm text-slate-400 hover:text-white transition-colors">{role}</span>
+              <span className={cn(
+                "text-sm transition-colors",
+                filters.roles.has(role) ? "text-slate-200" : "text-slate-500 group-hover:text-slate-400"
+              )}>
+                {role}
+              </span>
             </label>
           ))}
         </div>
       </div>
 
-      {/* Categories */}
-      <div>
-        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">Categoría</p>
+      {/* Categoría */}
+      <div className="space-y-2">
+        <p className="text-[11px] text-slate-600 uppercase tracking-wider">Categoría</p>
         <div className="flex flex-wrap gap-1.5">
           {ALL_CATEGORIES.map((cat) => (
             <button
               key={cat}
               onClick={() => toggleCategory(cat)}
               className={cn(
-                "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+                "rounded-full px-2.5 py-0.5 text-xs transition-colors",
                 filters.categories.has(cat)
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-white"
+                  ? "bg-slate-700 text-slate-200"
+                  : "text-slate-600 hover:text-slate-400"
               )}
             >
               {cat}
@@ -138,13 +157,11 @@ function FilterSidebar({ filters, setFilters, activeFilterCount }: FilterSidebar
 
 function EmptyState({ onReset }: { onReset: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center py-24 text-center">
-      <span className="text-5xl mb-4">🔍</span>
-      <h3 className="text-lg font-semibold text-white mb-2">Sin resultados</h3>
-      <p className="text-sm text-slate-400 mb-6">No encontramos proyectos con esos filtros.</p>
+    <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+      <p className="text-slate-600 text-sm">No hay proyectos con esos filtros.</p>
       <button
         onClick={onReset}
-        className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-300 hover:text-white transition-colors"
+        className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-4"
       >
         Limpiar filtros
       </button>
@@ -174,10 +191,8 @@ export default function ProjectsPage() {
       }
       if (filters.status !== "all" && p.status !== filters.status) return false
       if (filters.roles.size > 0) {
-        const hasAvailable = p.roles.some(
-          (r) => r.filled_by === null && filters.roles.has(r.role_name)
-        )
-        if (!hasAvailable) return false
+        const has = p.roles.some((r) => r.filled_by === null && filters.roles.has(r.role_name))
+        if (!has) return false
       }
       if (filters.categories.size > 0 && !filters.categories.has(p.category)) return false
       return true
@@ -186,7 +201,7 @@ export default function ProjectsPage() {
 
   function handleJoin(projectId: string, roleId: string) {
     setJoinedRoles((prev) => new Set([...prev, roleId]))
-    setToastMessage("¡Te uniste al proyecto!")
+    setToastMessage("Te uniste al proyecto")
     setTimeout(() => setToastMessage(""), 2500)
   }
 
@@ -198,45 +213,53 @@ export default function ProjectsPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 pt-16">
-      {/* Sticky top bar */}
-      <div className="sticky top-16 z-30 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-3">
+
+      {/* Top bar */}
+      <div className="sticky top-16 z-30 bg-slate-950/90 backdrop-blur-sm border-b border-slate-800/60">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-6 py-3">
+          {/* Mobile filter toggle */}
           <button
             onClick={() => setMobileFiltersOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-slate-300 hover:text-white transition-colors lg:hidden"
+            className="lg:hidden flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors"
           >
             <SlidersHorizontal size={14} />
-            Filtros
             {activeFilterCount > 0 && (
-              <span className="rounded-full bg-indigo-600 px-1.5 py-0.5 text-xs text-white leading-none">
-                {activeFilterCount}
-              </span>
+              <span className="text-xs text-indigo-400">({activeFilterCount})</span>
             )}
           </button>
+
+          {/* Search */}
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
             <input
               type="text"
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
               placeholder="Buscar proyectos..."
-              className="w-full rounded-xl border border-slate-700 bg-slate-800/60 py-2 pl-9 pr-4 text-sm text-white placeholder-slate-500 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+              className="w-full rounded-lg border border-slate-800 bg-slate-900/60 py-2 pl-8 pr-4 text-sm text-slate-300 placeholder-slate-600 outline-none transition focus:border-slate-700 focus:bg-slate-900"
             />
           </div>
+
+          {/* Create */}
           <Link
             href="/projects/new"
-            className="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors whitespace-nowrap"
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors whitespace-nowrap"
           >
-            + Crear proyecto
+            Nuevo proyecto
           </Link>
         </div>
       </div>
 
       {/* Body */}
-      <div className="mx-auto flex max-w-7xl gap-8 px-6 py-8">
+      <div className="mx-auto flex max-w-6xl gap-10 px-6 py-8">
+
         {/* Desktop sidebar */}
         <div className="hidden lg:block">
-          <FilterSidebar filters={filters} setFilters={setFilters} activeFilterCount={activeFilterCount} />
+          <FilterSidebar
+            filters={filters}
+            setFilters={setFilters}
+            activeFilterCount={activeFilterCount}
+          />
         </div>
 
         {/* Mobile drawer */}
@@ -249,32 +272,36 @@ export default function ProjectsPage() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setMobileFiltersOpen(false)}
-                className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+                className="fixed inset-0 z-40 bg-black/50 lg:hidden"
               />
               <motion.div
                 key="drawer"
                 initial={{ x: "-100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "-100%" }}
-                transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                className="fixed inset-y-0 left-0 z-50 w-72 overflow-y-auto bg-slate-900 p-6 lg:hidden"
+                transition={{ type: "spring", damping: 28, stiffness: 280 }}
+                className="fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto bg-slate-950 border-r border-slate-800 px-6 py-8 lg:hidden"
               >
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-semibold text-white">Filtros</h2>
-                  <button onClick={() => setMobileFiltersOpen(false)} className="text-slate-400 hover:text-white">
-                    <X size={18} />
+                  <span className="text-sm font-medium text-slate-300">Filtros</span>
+                  <button onClick={() => setMobileFiltersOpen(false)} className="text-slate-600 hover:text-slate-400">
+                    <X size={16} />
                   </button>
                 </div>
-                <FilterSidebar filters={filters} setFilters={setFilters} activeFilterCount={activeFilterCount} />
+                <FilterSidebar
+                  filters={filters}
+                  setFilters={setFilters}
+                  activeFilterCount={activeFilterCount}
+                />
               </motion.div>
             </>
           )}
         </AnimatePresence>
 
-        {/* Main grid */}
+        {/* Grid */}
         <main className="flex-1 min-w-0">
-          <p className="mb-5 text-sm text-slate-500">
-            {filtered.length} proyecto{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
+          <p className="mb-5 text-xs text-slate-600">
+            {filtered.length} proyecto{filtered.length !== 1 ? "s" : ""}
           </p>
 
           {filtered.length === 0 ? (
@@ -285,7 +312,7 @@ export default function ProjectsPage() {
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
             >
               {filtered.map((project) => (
                 <ProjectCard
@@ -305,10 +332,11 @@ export default function ProjectsPage() {
         {toastMessage && (
           <motion.div
             key="toast"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-medium text-white shadow-xl shadow-indigo-500/20"
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-xl bg-slate-800 border border-slate-700 px-4 py-2.5 text-sm text-slate-200"
           >
             {toastMessage}
           </motion.div>
