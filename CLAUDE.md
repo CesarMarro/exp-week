@@ -54,13 +54,20 @@ coopwork/
 
 ### Database Schema (Supabase)
 
-Three tables with RLS enabled:
+Four tables with RLS enabled:
 
+- **careers** — referencia para desplegable de carreras (login/registro). Campos: `id`, `name`, `display_order`. Lectura pública.
 - **profiles** — extends `auth.users`; auto-created via trigger on signup. Fields: `id`, `full_name`, `career`, `bio`, `avatar_url`
 - **projects** — `id`, `title`, `description`, `owner_id`, `status` (`open`|`full`|`closed`), `created_at`
 - **project_roles** — `id`, `project_id`, `role_name`, `equity_percent`, `filled_by` (null = available)
 
 RLS policies: public read on all tables; authenticated users can create projects and fill roles; owners can insert roles.
+
+**Desplegable de carreras (frontend):** Consultar `careers` desde Supabase para poblar el `<select>`. Al guardar, actualizar `profiles.career` con el `name` seleccionado:
+```ts
+const { data } = await supabase.from('careers').select('id, name').order('display_order')
+// Para actualizar perfil: supabase.from('profiles').update({ career: selectedCareerName }).eq('id', userId)
+```
 
 ### Key Business Logic
 

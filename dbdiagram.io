@@ -14,6 +14,13 @@ Table auth_users {
   created_at timestamptz
 }
 
+Table careers {
+  id uuid [pk, default: `gen_random_uuid()`]
+  name varchar(120) [not null, unique]
+  display_order smallint [not null, default: 0]
+  Note: "Referencia para desplegable de carreras en login/registro"
+}
+
 Table profiles {
   id uuid [pk, ref: > auth_users.id, note: "1:1 con auth.users"]
   full_name varchar(120)
