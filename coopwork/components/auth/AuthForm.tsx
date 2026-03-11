@@ -4,8 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase";
-
 // ─── Eyeball Component ────────────────────────────────────────────────────────
 
 interface EyeBallProps {
@@ -447,6 +445,12 @@ interface FormState {
   isTypingPassword: boolean;
 }
 
+interface MockUser {
+  id: string
+  email: string
+  user_metadata: { full_name: string; career: string }
+}
+
 export default function AuthForm() {
   const router = useRouter();
   const [s, setS] = useState<FormState>({
@@ -468,18 +472,19 @@ export default function AuthForm() {
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
-    set({ loading: true, error: "" });
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: s.email,
-      password: s.password,
-    });
-    if (error) {
-      set({ loading: false, error: "Credenciales incorrectas. Intenta de nuevo." });
-    } else {
-      router.push("/");
-      router.refresh();
+    if (!s.email || !s.password) {
+      set({ error: "Completa todos los campos." });
+      return;
     }
+    set({ loading: true, error: "" });
+    await new Promise((r) => setTimeout(r, 600));
+    const mockUser: MockUser = {
+      id: crypto.randomUUID(),
+      email: s.email,
+      user_metadata: { full_name: s.email.split("@")[0], career: "Colaborador" },
+    };
+    localStorage.setItem("mockUser", JSON.stringify(mockUser));
+    router.push("/projects");
   }
 
   async function handleRegister(e: React.FormEvent) {
@@ -489,18 +494,14 @@ export default function AuthForm() {
       return;
     }
     set({ loading: true, error: "" });
-    const supabase = createClient();
-    const { error } = await supabase.auth.signUp({
+    await new Promise((r) => setTimeout(r, 600));
+    const mockUser: MockUser = {
+      id: crypto.randomUUID(),
       email: s.email,
-      password: s.password,
-      options: { data: { full_name: s.fullName, career: s.career } },
-    });
-    if (error) {
-      set({ loading: false, error: error.message });
-    } else {
-      router.push("/");
-      router.refresh();
-    }
+      user_metadata: { full_name: s.fullName || s.email.split("@")[0], career: s.career || "Colaborador" },
+    };
+    localStorage.setItem("mockUser", JSON.stringify(mockUser));
+    router.push("/projects");
   }
 
   const inputClass =
