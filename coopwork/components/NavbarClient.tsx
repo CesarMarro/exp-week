@@ -12,24 +12,30 @@ interface NavbarClientProps {
 
 const navLinks = [
   { href: "/projects", label: "Proyectos" },
-  { href: "/projects/new", label: "Crear" },
-  { href: "/profile", label: "Perfil" },
 ];
 
 function NavLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className="group relative block py-1 outline-none">
+    <Link
+      href={href}
+      className="group relative block rounded-xl px-4 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+      aria-label={label}
+    >
       <motion.span
-        className="relative z-10 block text-sm text-slate-300 group-hover:text-white"
+        className="relative z-10 block text-base font-medium text-slate-300 group-hover:text-white"
         initial={false}
-        whileHover={{ scale: 1.05 }}
+        whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.98 }}
         transition={{ duration: 0.2 }}
       >
         {label}
       </motion.span>
       <span
-        className="absolute bottom-0 left-0 h-px w-0 bg-indigo-400 transition-[width] duration-200 ease-out group-hover:w-full"
+        className="absolute inset-0 rounded-xl bg-white/5 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+        aria-hidden
+      />
+      <span
+        className="absolute bottom-1.5 left-4 right-4 h-px w-0 bg-indigo-400/80 transition-[width] duration-200 ease-out group-hover:w-[calc(100%-2rem)]"
         aria-hidden
       />
     </Link>
@@ -39,11 +45,10 @@ function NavLink({ href, label }: { href: string; label: string }) {
 export default function NavbarClient({ user }: NavbarClientProps) {
   const router = useRouter();
   const { scrollY } = useScroll();
-  const navBlur = useTransform(scrollY, [0, 100], ["blur(16px)", "blur(24px)"]);
-  const navBorder = useTransform(
+  const navBlur = useTransform(
     scrollY,
-    [0, 100],
-    ["rgba(99, 102, 241, 0.2)", "rgba(99, 102, 241, 0.28)"]
+    [0, 80],
+    ["blur(20px) saturate(180%)", "blur(28px) saturate(200%)"]
   );
 
   async function handleSignOut() {
@@ -53,49 +58,42 @@ export default function NavbarClient({ user }: NavbarClientProps) {
     router.refresh();
   }
 
-  const initials = user?.user_metadata?.full_name
-    ? (user.user_metadata.full_name as string)
-        .split(" ")
-        .map((n: string) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2)
-    : user?.email?.[0]?.toUpperCase() ?? "U";
-
-  const displayName =
-    (user?.user_metadata?.full_name as string) ?? user?.email ?? "Usuario";
-
   return (
     <motion.nav
       initial={{ y: -24, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       style={{
-        backgroundColor: "rgba(15, 23, 42, 0.78)",
+        backgroundColor: "rgba(15, 23, 42, 0.72)",
         backdropFilter: navBlur,
         WebkitBackdropFilter: navBlur,
-        borderBottomWidth: 1,
-        borderBottomStyle: "solid",
-        borderBottomColor: navBorder,
-        boxShadow: "0 0 24px rgba(99, 102, 241, 0.08)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+        boxShadow:
+          "0 4px 30px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
       }}
       className="fixed top-0 z-50 w-full"
+      role="navigation"
+      aria-label="Navegación principal"
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
-        <Link href="/" className="flex items-center gap-0.5 outline-none">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+        <Link
+          href="/"
+          className="flex items-center gap-1 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent focus-visible:rounded-lg"
+          aria-label="CoopWork - Ir al inicio"
+        >
           <motion.span
-            className="text-xl font-bold text-white"
+            className="text-2xl font-bold tracking-tight text-white md:text-3xl"
             initial={false}
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.2 }}
           >
             Coop
           </motion.span>
           <motion.span
-            className="text-xl font-bold text-indigo-400"
+            className="text-2xl font-bold tracking-tight text-indigo-400 md:text-3xl"
             initial={false}
-            whileHover={{ scale: 1.03, x: 1 }}
+            whileHover={{ scale: 1.03, x: 2 }}
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.2 }}
           >
@@ -103,7 +101,7 @@ export default function NavbarClient({ user }: NavbarClientProps) {
           </motion.span>
         </Link>
 
-        <div className="flex items-center gap-8">
+        <div className="flex items-center gap-2 sm:gap-4">
           {navLinks.map((link, i) => (
             <motion.div
               key={link.href}
@@ -121,7 +119,6 @@ export default function NavbarClient({ user }: NavbarClientProps) {
 
           {user ? (
             <motion.div
-              className="flex items-center gap-3"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
@@ -130,33 +127,20 @@ export default function NavbarClient({ user }: NavbarClientProps) {
                 ease: [0.22, 1, 0.36, 1],
               }}
             >
-              <div className="flex items-center gap-2.5">
-                <motion.div
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white shadow-lg shadow-indigo-500/25"
-                  initial={false}
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.95 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {initials}
-                </motion.div>
-                <span className="max-w-[120px] truncate text-sm text-slate-300">
-                  {displayName}
-                </span>
-              </div>
               <motion.button
                 onClick={handleSignOut}
-                className="rounded-lg border border-slate-600/80 bg-slate-800/50 px-4 py-2 text-sm font-semibold text-slate-300"
+                type="button"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-500/30 transition-shadow hover:shadow-indigo-500/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
                 initial={false}
                 whileHover={{
-                  borderColor: "rgba(148, 163, 184, 0.5)",
-                  color: "rgb(255 255 255)",
-                  scale: 1.02,
+                  scale: 1.03,
+                  boxShadow: "0 12px 32px rgba(99, 102, 241, 0.4)",
                 }}
                 whileTap={{ scale: 0.98 }}
                 transition={{ duration: 0.2 }}
+                aria-label="Cerrar sesión"
               >
-                Salir
+                Cerrar sesión
               </motion.button>
             </motion.div>
           ) : (
@@ -169,13 +153,17 @@ export default function NavbarClient({ user }: NavbarClientProps) {
                 ease: [0.22, 1, 0.36, 1],
               }}
             >
-              <Link href="/login" className="block">
+              <Link
+                href="/login"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
+                aria-label="Iniciar sesión"
+              >
                 <motion.span
-                  className="inline-block rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-indigo-500/30 transition-shadow hover:shadow-indigo-500/40"
                   initial={false}
                   whileHover={{
                     scale: 1.03,
-                    boxShadow: "0 10px 28px rgba(99, 102, 241, 0.35)",
+                    boxShadow: "0 12px 32px rgba(99, 102, 241, 0.4)",
                   }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ duration: 0.2 }}

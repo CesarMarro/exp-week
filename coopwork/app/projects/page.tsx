@@ -1,387 +1,363 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
+import { useRef } from "react"
 import Link from "next/link"
-import { Search, X, SlidersHorizontal } from "lucide-react"
-import { createClient } from "@/lib/supabase"
-import { fetchProjectsWithRoles, type ProjectWithRoles } from "@/lib/supabase-queries"
+import { motion, useInView } from "framer-motion"
+import { ArrowRight, Users, Layers, ShieldCheck, Search, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { staggerContainer } from "@/lib/animations"
-import ProjectCard from "@/components/ProjectCard"
+import { fadeUp, staggerContainer } from "@/lib/animations"
+import { MOCK_PROJECTS, relativeDate, type ProjectCategory } from "@/lib/mock-data"
 
-type StatusFilter = "all" | ProjectWithRoles["status"]
-type RoleName = string
-type ProjectCategory = string
-
-interface Filters {
-  search: string
-  status: StatusFilter
-  roles: Set<RoleName>
-  categories: Set<ProjectCategory>
+function Section({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  className?: string
+}) {
+  const ref = useRef(null)
+  const inView = useInView(ref, { once: true, margin: "-60px" })
+  return (
+    <motion.section
+      ref={ref}
+      variants={staggerContainer}
+      initial="hidden"
+      animate={inView ? "visible" : "hidden"}
+      className={className}
+    >
+      {children}
+    </motion.section>
+  )
 }
 
-const ALL_ROLES: RoleName[] = ["Diseño", "Ingeniería", "Marketing", "Administración", "Legal", "Finanzas"]
-const ALL_CATEGORIES: ProjectCategory[] = ["Tech", "Social", "Fintech", "Health", "Education", "Creative"]
-const STATUS_OPTIONS: { value: StatusFilter; label: string }[] = [
-  { value: "all",    label: "Todos"   },
-  { value: "open",   label: "Abiertos" },
-  { value: "full",   label: "Llenos"  },
-  { value: "closed", label: "Cerrados" },
+const CATEGORY_META: Record<
+  ProjectCategory,
+  { icon: string; color: string; text: string; count: number }
+> = {
+  Tech:      { icon: "⚡", color: "border-indigo-800/60 hover:border-indigo-600",  text: "text-indigo-300",  count: 2 },
+  Social:    { icon: "🌱", color: "border-green-800/60 hover:border-green-600",    text: "text-green-300",   count: 2 },
+  Fintech:   { icon: "💳", color: "border-emerald-800/60 hover:border-emerald-600",text: "text-emerald-300", count: 1 },
+  Health:    { icon: "🩺", color: "border-rose-800/60 hover:border-rose-600",      text: "text-rose-300",    count: 1 },
+  Education: { icon: "📚", color: "border-amber-800/60 hover:border-amber-600",    text: "text-amber-300",   count: 1 },
+  Creative:  { icon: "🎨", color: "border-purple-800/60 hover:border-purple-600",  text: "text-purple-300",  count: 1 },
+}
+
+const STEPS = [
+  {
+    number: "01",
+    title: "Explora proyectos",
+    description: "Navega el feed de proyectos abiertos. Filtra por área, categoría o estado.",
+    icon: <Search size={18} />,
+  },
+  {
+    number: "02",
+    title: "Elige tu rol",
+    description: "Cada proyecto define roles con su porcentaje de equity. Elige el que encaja contigo.",
+    icon: <Users size={18} />,
+  },
+  {
+    number: "03",
+    title: "Colabora con claridad",
+    description: "Equity definido desde el día uno. Sin sorpresas, sin jerarquías ambiguas.",
+    icon: <ShieldCheck size={18} />,
+  },
 ]
 
-interface FilterSidebarProps {
-  filters: Filters
-  setFilters: React.Dispatch<React.SetStateAction<Filters>>
-  activeFilterCount: number
+const STATUS_DOT: Record<string, string> = {
+  open:   "bg-emerald-400",
+  full:   "bg-amber-400",
+  closed: "bg-slate-500",
 }
 
-function FilterSidebar({ filters, setFilters, activeFilterCount }: FilterSidebarProps) {
-  function toggleRole(role: RoleName) {
-    setFilters((prev) => {
-      const next = new Set(prev.roles)
-      if (next.has(role)) next.delete(role); else next.add(role)
-      return { ...prev, roles: next }
-    })
-  }
-
-  function toggleCategory(cat: ProjectCategory) {
-    setFilters((prev) => {
-      const next = new Set(prev.categories)
-      if (next.has(cat)) next.delete(cat); else next.add(cat)
-      return { ...prev, categories: next }
-    })
-  }
-
-  return (
-    <aside className="w-52 shrink-0 space-y-7 pt-1">
-      {/* Header */}
-      <div className="flex items-center justify-between h-5">
-        <span className="text-xs font-medium text-slate-400 uppercase tracking-wider">Filtros</span>
-        {activeFilterCount > 0 && (
-          <button
-            onClick={() => setFilters({ search: "", status: "all", roles: new Set(), categories: new Set() })}
-            className="text-xs text-slate-600 hover:text-slate-400 transition-colors"
-          >
-            Limpiar
-          </button>
-        )}
-      </div>
-
-      {/* Estado */}
-      <div className="space-y-2">
-        <p className="text-[11px] text-slate-600 uppercase tracking-wider">Estado</p>
-        <div className="space-y-1">
-          {STATUS_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setFilters((prev) => ({ ...prev, status: opt.value }))}
-              className={cn(
-                "block w-full text-left text-sm py-1 px-2 rounded-lg transition-colors",
-                filters.status === opt.value
-                  ? "text-slate-100 bg-slate-800"
-                  : "text-slate-500 hover:text-slate-300"
-              )}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Área */}
-      <div className="space-y-2">
-        <p className="text-[11px] text-slate-600 uppercase tracking-wider">Área</p>
-        <div className="space-y-1">
-          {ALL_ROLES.map((role) => (
-            <label
-              key={role}
-              className="flex items-center gap-2.5 py-1 px-2 rounded-lg cursor-pointer hover:bg-slate-800/50 transition-colors group"
-            >
-              <span
-                className={cn(
-                  "h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 transition-colors",
-                  filters.roles.has(role)
-                    ? "bg-indigo-500 border-indigo-500"
-                    : "border-slate-700 group-hover:border-slate-600"
-                )}
-              >
-                {filters.roles.has(role) && (
-                  <svg viewBox="0 0 8 8" className="h-2 w-2 fill-white">
-                    <path d="M1 4l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-              </span>
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={filters.roles.has(role)}
-                onChange={() => toggleRole(role)}
-              />
-              <span className={cn(
-                "text-sm transition-colors",
-                filters.roles.has(role) ? "text-slate-200" : "text-slate-500 group-hover:text-slate-400"
-              )}>
-                {role}
-              </span>
-            </label>
-          ))}
-        </div>
-      </div>
-
-      {/* Categoría */}
-      <div className="space-y-2">
-        <p className="text-[11px] text-slate-600 uppercase tracking-wider">Categoría</p>
-        <div className="flex flex-wrap gap-1.5">
-          {ALL_CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => toggleCategory(cat)}
-              className={cn(
-                "rounded-full px-2.5 py-0.5 text-xs transition-colors",
-                filters.categories.has(cat)
-                  ? "bg-slate-700 text-slate-200"
-                  : "text-slate-600 hover:text-slate-400"
-              )}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
-      </div>
-    </aside>
-  )
-}
-
-function EmptyState({ onReset }: { onReset: () => void }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-      <p className="text-slate-600 text-sm">No hay proyectos con esos filtros.</p>
-      <button
-        onClick={onReset}
-        className="text-xs text-slate-500 hover:text-slate-300 transition-colors underline underline-offset-4"
-      >
-        Limpiar filtros
-      </button>
-    </div>
-  )
+const STATUS_LABEL: Record<string, string> = {
+  open: "Abierto", full: "Lleno", closed: "Cerrado",
 }
 
 export default function ProjectsPage() {
-  const [projects, setProjects] = useState<ProjectWithRoles[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<Filters>({
-    search: "",
-    status: "all",
-    roles: new Set(),
-    categories: new Set(),
-  })
-  const [joinedRoles, setJoinedRoles] = useState<Set<string>>(new Set())
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
-  const [toastMessage, setToastMessage] = useState("")
-
-  useEffect(() => {
-    async function load() {
-      const supabase = createClient()
-      const data = await fetchProjectsWithRoles(supabase)
-      setProjects(data)
-      setLoading(false)
-    }
-    load()
-  }, [])
-
-  const activeFilterCount =
-    (filters.status !== "all" ? 1 : 0) + filters.roles.size + filters.categories.size
-
-  const filtered = useMemo(() => {
-    return projects.filter((p) => {
-      if (filters.search) {
-        const q = filters.search.toLowerCase()
-        if (!p.title.toLowerCase().includes(q) && !p.description.toLowerCase().includes(q)) return false
-      }
-      if (filters.status !== "all" && p.status !== filters.status) return false
-      if (filters.roles.size > 0) {
-        const has = p.roles.some((r) => r.filled_by === null && filters.roles.has(r.role_name))
-        if (!has) return false
-      }
-      if (filters.categories.size > 0 && !filters.categories.has(p.category)) return false
-      return true
-    })
-  }, [projects, filters])
-
-  async function handleJoin(projectId: string, roleId: string) {
-    const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      setToastMessage("Inicia sesión para unirte")
-      setTimeout(() => setToastMessage(""), 2500)
-      return
-    }
-    const { error } = await import("@/lib/supabase-queries").then((m) =>
-      m.joinRole(supabase, roleId, user.id)
-    )
-    if (error) {
-      setToastMessage(error)
-      setTimeout(() => setToastMessage(""), 2500)
-      return
-    }
-    setJoinedRoles((prev) => new Set([...prev, roleId]))
-    setProjects((prev) =>
-      prev.map((p) => {
-        if (p.id !== projectId) return p
-        const newRoles = p.roles.map((r) =>
-          r.id === roleId ? { ...r, filled_by: user.id } : r
-        )
-        return {
-          ...p,
-          roles: newRoles,
-          status: newRoles.every((r) => r.filled_by) ? ("full" as const) : p.status,
-        }
-      })
-    )
-    setToastMessage("Te uniste al proyecto")
-    setTimeout(() => setToastMessage(""), 2500)
-  }
-
-  function resetFilters() {
-    setFilters({ search: "", status: "all", roles: new Set(), categories: new Set() })
-  }
-
-  const gridKey = filtered.map((p) => p.id).join("-")
+  const heroRef = useRef(null)
+  const heroInView = useInView(heroRef, { once: true })
+  const featuredProjects = MOCK_PROJECTS.filter((p) => p.status === "open").slice(0, 3)
 
   return (
-    <div className="min-h-screen bg-slate-950 pt-16">
+    <div className="min-h-screen bg-slate-950 overflow-hidden">
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute top-0 right-1/4 w-[600px] h-[600px] rounded-full bg-indigo-600/6 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] rounded-full bg-violet-600/5 blur-[100px]" />
+      </div>
 
-      {/* Top bar */}
-      <div className="sticky top-16 z-30 bg-slate-950/90 backdrop-blur-sm border-b border-slate-800/60">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-6 py-3">
-          {/* Mobile filter toggle */}
-          <button
-            onClick={() => setMobileFiltersOpen(true)}
-            className="lg:hidden flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-300 transition-colors"
+      <div className="relative z-10">
+        {/* Hero */}
+        <section
+          ref={heroRef}
+          className="mx-auto max-w-4xl px-6 pt-32 pb-20 text-center"
+        >
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            animate={heroInView ? "visible" : "hidden"}
+            className="mb-4 flex justify-center"
           >
-            <SlidersHorizontal size={14} />
-            {activeFilterCount > 0 && (
-              <span className="text-xs text-indigo-400">({activeFilterCount})</span>
-            )}
-          </button>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-400">
+              <Layers size={11} />
+              {MOCK_PROJECTS.length} proyectos activos
+            </span>
+          </motion.div>
 
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600" />
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-              placeholder="Buscar proyectos..."
-              className="w-full rounded-lg border border-slate-800 bg-slate-900/60 py-2 pl-8 pr-4 text-sm text-slate-300 placeholder-slate-600 outline-none transition focus:border-slate-700 focus:bg-slate-900"
-            />
+          <motion.h1
+            variants={fadeUp}
+            initial="hidden"
+            animate={heroInView ? "visible" : "hidden"}
+            transition={{ delay: 0.08 }}
+            className="mb-5 text-4xl font-bold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl"
+          >
+            Encuentra el equipo{" "}
+            <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-indigo-400 bg-clip-text text-transparent">
+              para tu próxima idea
+            </span>
+          </motion.h1>
+
+          <motion.p
+            variants={fadeUp}
+            initial="hidden"
+            animate={heroInView ? "visible" : "hidden"}
+            transition={{ delay: 0.16 }}
+            className="mb-10 text-lg text-slate-500 max-w-xl mx-auto leading-relaxed"
+          >
+            Proyectos reales con roles claros y distribución de equity transparente desde el primer día.
+          </motion.p>
+
+          <motion.div
+            variants={fadeUp}
+            initial="hidden"
+            animate={heroInView ? "visible" : "hidden"}
+            transition={{ delay: 0.24 }}
+            className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+          >
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link
+                href="/projects-feed"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-7 py-3.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+              >
+                Explorar proyectos
+                <ArrowRight size={15} />
+              </Link>
+            </motion.div>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link
+                href="/projects/new"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-7 py-3.5 text-sm font-semibold text-slate-300 hover:border-slate-600 hover:text-white transition-colors"
+              >
+                <Plus size={15} />
+                Crear proyecto
+              </Link>
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* Cómo funciona */}
+        <Section className="mx-auto max-w-5xl px-6 py-16">
+          <motion.div variants={fadeUp} className="mb-12 text-center">
+            <p className="text-xs font-medium uppercase tracking-widest text-slate-600 mb-2">
+              Proceso
+            </p>
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">
+              Tres pasos para colaborar
+            </h2>
+          </motion.div>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {STEPS.map((step, i) => (
+              <motion.div
+                key={step.number}
+                variants={fadeUp}
+                transition={{ delay: i * 0.1 }}
+                className="relative rounded-2xl border border-slate-800 bg-slate-900/50 p-6"
+              >
+                {i < STEPS.length - 1 && (
+                  <div className="absolute top-8 -right-2 hidden h-px w-4 bg-slate-700 sm:block" />
+                )}
+                <div className="mb-4 flex items-center gap-3">
+                  <span className="text-3xl font-black text-slate-800 leading-none select-none">
+                    {step.number}
+                  </span>
+                  <span className="text-slate-500">{step.icon}</span>
+                </div>
+                <h3 className="mb-1.5 font-semibold text-slate-200 text-[15px]">
+                  {step.title}
+                </h3>
+                <p className="text-sm text-slate-500 leading-relaxed">
+                  {step.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </Section>
+
+        {/* Categorías */}
+        <Section className="mx-auto max-w-5xl px-6 py-16">
+          <motion.div variants={fadeUp} className="mb-10 text-center">
+            <p className="text-xs font-medium uppercase tracking-widest text-slate-600 mb-2">
+              Áreas
+            </p>
+            <h2 className="text-2xl font-bold text-white sm:text-3xl">
+              Proyectos de todo tipo
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {(Object.entries(CATEGORY_META) as [ProjectCategory, (typeof CATEGORY_META)[ProjectCategory]][]).map(
+              ([cat, meta], i) => (
+                <motion.div
+                  key={cat}
+                  variants={fadeUp}
+                  transition={{ delay: i * 0.07 }}
+                  whileHover={{ y: -3 }}
+                  className={cn(
+                    "flex flex-col items-center gap-2 rounded-xl border bg-slate-900/40 p-4 transition-colors cursor-default",
+                    meta.color
+                  )}
+                >
+                  <span className="text-2xl">{meta.icon}</span>
+                  <span className={cn("text-xs font-semibold", meta.text)}>{cat}</span>
+                  <span className="text-[10px] text-slate-600">
+                    {meta.count} proyecto{meta.count !== 1 ? "s" : ""}
+                  </span>
+                </motion.div>
+              )
+            )}
+          </div>
+        </Section>
+
+        {/* Preview de proyectos */}
+        <Section className="mx-auto max-w-5xl px-6 py-16">
+          <div className="mb-8 flex items-end justify-between">
+            <motion.div variants={fadeUp}>
+              <p className="text-xs font-medium uppercase tracking-widest text-slate-600 mb-1">
+                Recientes
+              </p>
+              <h2 className="text-2xl font-bold text-white">
+                Proyectos abiertos
+              </h2>
+            </motion.div>
+            <motion.div variants={fadeUp}>
+              <Link
+                href="/projects-feed"
+                className="text-sm text-slate-500 hover:text-slate-300 transition-colors inline-flex items-center gap-1"
+              >
+                Ver todos
+                <ArrowRight size={13} />
+              </Link>
+            </motion.div>
           </div>
 
-          {/* Create */}
-          <Link
-            href="/projects/new"
-            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 transition-colors whitespace-nowrap"
-          >
-            Nuevo proyecto
-          </Link>
-        </div>
-      </div>
-
-      {/* Body */}
-      <div className="mx-auto flex max-w-6xl gap-10 px-6 py-8">
-
-        {/* Desktop sidebar */}
-        <div className="hidden lg:block">
-          <FilterSidebar
-            filters={filters}
-            setFilters={setFilters}
-            activeFilterCount={activeFilterCount}
-          />
-        </div>
-
-        {/* Mobile drawer */}
-        <AnimatePresence>
-          {mobileFiltersOpen && (
-            <>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {featuredProjects.map((project, i) => (
               <motion.div
-                key="backdrop"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setMobileFiltersOpen(false)}
-                className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-              />
-              <motion.div
-                key="drawer"
-                initial={{ x: "-100%" }}
-                animate={{ x: 0 }}
-                exit={{ x: "-100%" }}
-                transition={{ type: "spring", damping: 28, stiffness: 280 }}
-                className="fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto bg-slate-950 border-r border-slate-800 px-6 py-8 lg:hidden"
+                key={project.id}
+                variants={fadeUp}
+                transition={{ delay: i * 0.08 }}
+                whileHover={{ y: -2 }}
+                className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 hover:border-slate-700 transition-colors"
               >
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-sm font-medium text-slate-300">Filtros</span>
-                  <button onClick={() => setMobileFiltersOpen(false)} className="text-slate-600 hover:text-slate-400">
-                    <X size={16} />
-                  </button>
+                <div className="flex items-center gap-1.5 mb-3">
+                  <span className={cn("h-1.5 w-1.5 rounded-full", STATUS_DOT[project.status])} />
+                  <span className="text-[11px] text-slate-500">{STATUS_LABEL[project.status]}</span>
+                  <span className="text-slate-700 text-[11px] ml-auto">{relativeDate(project.created_at)}</span>
                 </div>
-                <FilterSidebar
-                  filters={filters}
-                  setFilters={setFilters}
-                  activeFilterCount={activeFilterCount}
-                />
+                <h3 className="font-semibold text-slate-200 text-sm mb-1">{project.title}</h3>
+                <p className="text-xs text-slate-500 line-clamp-2 mb-3 leading-relaxed">
+                  {project.description}
+                </p>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {project.roles
+                    .filter((r) => r.filled_by === null)
+                    .slice(0, 2)
+                    .map((r) => (
+                      <span
+                        key={r.id}
+                        className="rounded-full border border-indigo-800/50 bg-indigo-500/10 px-2 py-0.5 text-[10px] text-indigo-400"
+                      >
+                        {r.role_name}
+                      </span>
+                    ))}
+                  {project.roles.filter((r) => r.filled_by === null).length > 2 && (
+                    <span className="text-[10px] text-slate-600 px-1 py-0.5">
+                      +{project.roles.filter((r) => r.filled_by === null).length - 2} más
+                    </span>
+                  )}
+                </div>
+                <div className="flex h-1 w-full overflow-hidden rounded-full gap-px">
+                  {project.roles.map((r, idx) => (
+                    <div
+                      key={r.id}
+                      style={{ width: `${r.equity_percent}%` }}
+                      className={cn(
+                        "h-full",
+                        r.filled_by !== null
+                          ? "bg-slate-700"
+                          : ["bg-indigo-500", "bg-violet-500", "bg-sky-500", "bg-purple-500"][idx % 4]
+                      )}
+                    />
+                  ))}
+                </div>
               </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+            ))}
+          </div>
+        </Section>
 
-        {/* Grid */}
-        <main className="flex-1 min-w-0">
-          <p className="mb-5 text-xs text-slate-600">
-            {loading ? "Cargando..." : `${filtered.length} proyecto${filtered.length !== 1 ? "s" : ""}`}
-          </p>
+        {/* Stats */}
+        <Section className="mx-auto max-w-5xl px-6 py-16">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/40 grid grid-cols-3 divide-x divide-slate-800">
+            {[
+              { value: `${MOCK_PROJECTS.filter((p) => p.status === "open").length}`, label: "Proyectos abiertos" },
+              { value: "6", label: "Áreas de conocimiento" },
+              { value: "100%", label: "Equity transparente" },
+            ].map((stat, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUp}
+                transition={{ delay: i * 0.1 }}
+                className="flex flex-col items-center justify-center py-8 px-4 text-center"
+              >
+                <span className="text-3xl font-bold text-white mb-1">{stat.value}</span>
+                <span className="text-xs text-slate-500">{stat.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </Section>
 
-          {loading ? (
-            <div className="py-16 text-center text-slate-500 text-sm">Cargando proyectos...</div>
-          ) : filtered.length === 0 ? (
-            <EmptyState onReset={resetFilters} />
-          ) : (
-            <motion.div
-              key={gridKey}
-              variants={staggerContainer}
-              initial="hidden"
-              animate="visible"
-              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
-            >
-              {filtered.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onJoin={handleJoin}
-                  joinedRoles={joinedRoles}
-                />
-              ))}
-            </motion.div>
-          )}
-        </main>
-      </div>
-
-      {/* Toast */}
-      <AnimatePresence>
-        {toastMessage && (
+        {/* CTA final */}
+        <Section className="mx-auto max-w-5xl px-6 py-16 pb-32">
           <motion.div
-            key="toast"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.2 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-xl bg-slate-800 border border-slate-700 px-4 py-2.5 text-sm text-slate-200"
+            variants={fadeUp}
+            className="rounded-2xl border border-slate-800 bg-slate-900/60 px-8 py-12 text-center"
           >
-            {toastMessage}
+            <h2 className="text-2xl font-bold text-white mb-3 sm:text-3xl">
+              ¿Tienes una idea en mente?
+            </h2>
+            <p className="text-slate-500 mb-8 max-w-md mx-auto text-sm leading-relaxed">
+              Define los roles, asigna el equity y publica tu proyecto. El equipo correcto te encuentra.
+            </p>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+              <Link
+                href="/projects-feed"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-8 py-3.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors"
+              >
+                Explorar proyectos
+                <ArrowRight size={15} />
+              </Link>
+            </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
+        </Section>
+      </div>
     </div>
   )
 }

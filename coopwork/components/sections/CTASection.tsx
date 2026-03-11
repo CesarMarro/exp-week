@@ -60,7 +60,7 @@ export default function CTASection() {
           </motion.div>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
             <Link
-              href="/projects"
+              href="/projects-feed"
               className="block w-full rounded-xl border border-slate-700 bg-slate-800/80 px-10 py-4 text-base font-semibold transition-colors hover:border-slate-500 hover:bg-slate-700 sm:w-auto"
             >
               {cta.ctaSecondary}

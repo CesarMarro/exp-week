@@ -7,6 +7,6 @@ export default async function LoginPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (user) redirect("/projects");
+  if (user) redirect("/projects-feed");
   return <AuthForm />;
 }

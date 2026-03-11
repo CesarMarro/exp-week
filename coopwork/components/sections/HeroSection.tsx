@@ -64,7 +64,7 @@ export default function HeroSection() {
         >
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}>
             <Link
-              href="/projects"
+              href="/projects-feed"
               className="block w-full rounded-xl bg-indigo-600 px-8 py-4 text-base font-semibold transition-colors hover:bg-indigo-500 sm:w-auto"
             >
               {hero.ctaPrimary}

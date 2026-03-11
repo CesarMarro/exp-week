@@ -448,6 +448,14 @@ interface FormState {
 
 const CAREERS_PLACEHOLDER = "Elige una carrera...";
 
+const CAREERS_LIST = [
+  "Ingeniería",
+  "Diseño",
+  "Administración de Empresas",
+  "Ciencias de la Computación",
+  "Psicología",
+];
+
 export default function AuthForm() {
   const router = useRouter();
   const [s, setS] = useState<FormState>({
@@ -462,19 +470,6 @@ export default function AuthForm() {
     isTypingEmail: false,
     isTypingPassword: false,
   });
-  const [careers, setCareers] = useState<{ id: string; name: string }[]>([]);
-
-  useEffect(() => {
-    const load = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from("careers")
-        .select("id, name")
-        .order("display_order");
-      setCareers(data ?? []);
-    };
-    load();
-  }, []);
 
   function set(partial: Partial<FormState>) {
     setS((prev) => ({ ...prev, ...partial }));
@@ -497,7 +492,7 @@ export default function AuthForm() {
       set({ error: error.message });
       return;
     }
-    router.push("/projects");
+    router.push("/projects-feed");
     router.refresh();
   }
 
@@ -524,7 +519,7 @@ export default function AuthForm() {
       await supabase.from("profiles").update({ career: s.career || "" }).eq("id", data.user.id);
     }
     set({ loading: false });
-    router.push("/projects");
+    router.push("/projects-feed");
     router.refresh();
   }
 
@@ -735,9 +730,9 @@ export default function AuthForm() {
                       aria-label="Carrera o área"
                     >
                       <option value="">{CAREERS_PLACEHOLDER}</option>
-                      {careers.map((c) => (
-                        <option key={c.id} value={c.name}>
-                          {c.name}
+                      {CAREERS_LIST.map((name) => (
+                        <option key={name} value={name}>
+                          {name}
                         </option>
                       ))}
                     </select>
